@@ -605,7 +605,6 @@ class FrogPilotVariables:
       params_memory.put("CurrentModelName", current_model_name)
     else:
       toggle.model = DEFAULT_MODEL
-    toggle.model = DEFAULT_MODEL
     classic_models = params.get("ClassicModels", encoding='utf-8') or ""
     toggle.classic_model = classic_models and toggle.model in classic_models.split(',')
     navigation_models = params.get("NavigationModels", encoding='utf-8') or ""
