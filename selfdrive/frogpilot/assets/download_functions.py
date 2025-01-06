@@ -1,12 +1,53 @@
+#!/usr/bin/env python3
 import requests
 import tempfile
 
+from datetime import datetime
 from pathlib import Path
 
 from openpilot.selfdrive.frogpilot.frogpilot_utilities import delete_file, is_url_pingable
 
 GITHUB_URL = "https://raw.githubusercontent.com/FrogAi/FrogPilot-Resources"
 GITLAB_URL = "https://gitlab.com/FrogAi/FrogPilot-Resources/-/raw"
+
+def check_github_rate_limit():
+  try:
+    response = requests.get("https://api.github.com/rate_limit")
+    response.raise_for_status()
+    rate_limit_info = response.json()
+
+    remaining = rate_limit_info["rate"]["remaining"]
+    print(f"GitHub API Requests Remaining: {remaining}")
+    if remaining > 5:
+      return True
+
+    reset_time = datetime.utcfromtimestamp(rate_limit_info["rate"]["reset"]).strftime('%Y-%m-%d %H:%M:%S')
+    print("GitHub rate limit reached")
+    print(f"GitHub Rate Limit Resets At (UTC): {reset_time}")
+    return False
+  except requests.exceptions.RequestException as e:
+    print(f"Error checking GitHub rate limit: {e}")
+    return False
+
+def check_gitlab_rate_limit():
+  try:
+    response = requests.get("https://gitlab.com/api/v4/projects")
+    response.raise_for_status()
+
+    rate_remaining = response.headers.get("RateLimit-Remaining")
+    if rate_remaining is not None and int(rate_remaining) > 5:
+      print(f"GitLab API Requests Remaining: {rate_remaining}")
+      return True
+
+    print("GitLab rate limit reached.")
+    rate_reset = response.headers.get("RateLimit-Reset")
+    if rate_reset is not None:
+      reset_time = datetime.utcfromtimestamp(int(rate_reset)).strftime('%Y-%m-%d %H:%M:%S')
+      print(f"GitLab Rate Limit Resets At (UTC): {reset_time}")
+    return False
+  except requests.exceptions.RequestException as e:
+    print(f"Error checking GitLab rate limit: {e}")
+    return False
 
 def download_file(cancel_param, destination, progress_param, url, download_param, params_memory):
   try:
@@ -75,9 +116,11 @@ def get_remote_file_size(url):
 
 def get_repository_url():
   if is_url_pingable("https://github.com"):
-    return GITHUB_URL
+    if check_github_rate_limit():
+      return GITHUB_URL
   if is_url_pingable("https://gitlab.com"):
-    return GITLAB_URL
+    if check_gitlab_rate_limit():
+      return GITLAB_URL
   return None
 
 def verify_download(file_path, url):

@@ -137,7 +137,7 @@ void SoftwarePanel::updateLabels() {
   fs_watch->addParam("UpdateAvailable");
 
   if (!isVisible()) {
-    scene.keep_screen_on = false;
+    scene.downloading_update = false;
     return;
   }
 
@@ -153,9 +153,9 @@ void SoftwarePanel::updateLabels() {
   if (updater_state != "idle") {
     downloadBtn->setEnabled(false);
     downloadBtn->setValue(updater_state);
-    scene.keep_screen_on = true;
+    scene.downloading_update = true;
   } else {
-    scene.keep_screen_on = false;
+    scene.downloading_update = false;
     if (failed) {
       downloadBtn->setText(tr("CHECK"));
       downloadBtn->setValue(tr("failed to check for update"));
